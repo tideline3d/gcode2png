@@ -1,0 +1,7 @@
+six==1.12.0 
+bokeh 
+matplotlib 
+numpy
+Pillow 
+PyQt5
+vtk==9.0.1
