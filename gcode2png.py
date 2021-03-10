@@ -8,6 +8,7 @@ import numpy as np
 from tvtk.api import tvtk
 import logging
 from PIL import Image
+import locale
 
 
 logger = logging.getLogger('gcodeParser')
@@ -152,14 +153,14 @@ class GcodeRenderer:
 		mlab.view(distance=20)
 		mlab.view(focalpoint=(self.bedsize[0]/2,self.bedsize[1]/2,20))
 		img_path = self.path.replace("gcode", "png")
-		mlab.savefig(img_path, size=(800,600))
+		mlab.savefig(img_path, size=(200,150))
 		mlab.close(all=True)
 		basewidth = 800
-		img = Image.open(img_path)
-		wpercent = (basewidth/float(img.size[0]))
-		hsize = int((float(img.size[1])*float(wpercent)))
-		img = img.resize((basewidth,hsize), Image.ANTIALIAS)
-		img.save(img_path) 
+		# img = Image.open(img_path)
+		# wpercent = (basewidth/float(img.size[0]))
+		# hsize = int((float(img.size[1])*float(wpercent)))
+		# img = img.resize((basewidth,hsize), Image.ANTIALIAS)
+		# img.save(img_path) 
 
 
 if __name__ == '__main__':
@@ -168,6 +169,8 @@ if __name__ == '__main__':
 	moves = "false"
 	bed = "true"
 	show = "false"
+    
+	locale.setlocale(locale.LC_ALL, 'C')
 
 
 	if "batch" in sys.argv[1] and "=" not in sys.argv[2]:
