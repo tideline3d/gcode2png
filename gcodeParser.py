@@ -5,15 +5,14 @@ import re
 
 
 class GcodeParser:
-
     def __init__(self):
         self.model = {}
-        self.model['object'] = GcodeModel(self)
-        self.model['support'] = GcodeModel(self)
-        self.category = 'object'
+        self.model["object"] = GcodeModel(self)
+        self.model["support"] = GcodeModel(self)
+        self.category = "object"
 
     def parseFile(self, path):
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             # init line counter
             self.lineNb = 0
 
@@ -25,30 +24,51 @@ class GcodeParser:
                 self.line = line.rstrip()
 
                 ##ignore support layers
-                if line.startswith("; support") or line.startswith("; feature support") or line.startswith(
-                        ";TYPE:SUPPORT") or line.startswith(";LAYER:-") or line.startswith(";LAYER:0"):
-                    self.category = 'support'
-                elif line.startswith("; layer") or line.startswith(";LAYER:") or line.startswith(
-                        ";TYPE:WALL-INNER") or line.startswith(";TYPE:WALL-OUTER"):
-                    self.category = 'object'
+                if (
+                       line.startswith("; support")
+                    or line.startswith("; feature support")
+                    or line.startswith(";LAYER:-")
+                    or line.startswith(";LAYER:0")
+                    or line.startswith(";TYPE:Custom")
+                    or line.startswith(";TYPE:Support material")
+                    or line.startswith(";TYPE:support")
+                    or line.startswith(";TYPE:SUPPORT")
+                    or line.startswith(";WIPE_")
+                ):
+                    self.category = "support"
+
+                elif (
+                      line.startswith("; layer")
+                    or line.startswith(";LAYER:")
+                    or line.startswith(";TYPE:Bridge infill")
+                    or line.startswith(";TYPE:External perimeter")
+                    or line.startswith(";TYPE:Gap fill")
+                    or line.startswith(";TYPE:Internal infill")
+                    or line.startswith(";TYPE:Overhang perimeter")
+                    or line.startswith(";TYPE:Perimeter")
+                    or line.startswith(";TYPE:Solid infill")
+                    or line.startswith(";TYPE:Top solid infill")
+                    or line.startswith(";TYPE:WALL-INNER")
+                    or line.startswith(";TYPE:WALL-OUTER")
+                ):
+                    self.category = "object"
 
                 self.parseLine()
 
-        self.model['object'].postProcess()
-        self.model['support'].postProcess()
+        self.model["object"].postProcess()
+        self.model["support"].postProcess()
         return self.model
 
     def parseLine(self):
-
         # strip comments:
         # first handle round brackets
         command = re.sub("\([^)]*\)", "", self.line)
         # then semicolons
-        idx = command.find(';')
+        idx = command.find(";")
         if idx >= 0:
             command = command[0:idx].strip()
         # detect unterminated round bracket comments, just in case
-        idx = command.find('(')
+        idx = command.find("(")
         if idx >= 0:
             self.warn("Stripping unterminated round-bracket comment")
             command = command[0:idx].strip()
@@ -121,11 +141,12 @@ class GcodeParser:
 
     def error(self, msg):
         # print "[ERROR] Line %d: %s (Text:'%s')" % (self.lineNb, msg, self.line)
-        raise Exception("[ERROR] Line %d: %s (Text:'%s')" % (self.lineNb, msg, self.line))
+        raise Exception(
+            "[ERROR] Line %d: %s (Text:'%s')" % (self.lineNb, msg, self.line)
+        )
 
 
 class BBox(object):
-
     def __init__(self, coords):
         self.xmin = self.xmax = coords["X"]
         self.ymin = self.ymax = coords["Y"]
@@ -159,23 +180,13 @@ class BBox(object):
 
 
 class GcodeModel:
-
     def __init__(self, parser):
         # save parser for messages
         self.parser = parser
         # latest coordinates & extrusion relative to offset, feedrate
-        self.relative = {
-            "X": 0.0,
-            "Y": 0.0,
-            "Z": 0.0,
-            "F": 0.0,
-            "E": 0.0}
+        self.relative = {"X": 0.0, "Y": 0.0, "Z": 0.0, "F": 0.0, "E": 0.0}
         # offsets for relative coordinates and position reset (G92)
-        self.offset = {
-            "X": 0.0,
-            "Y": 0.0,
-            "Z": 0.0,
-            "E": 0.0}
+        self.offset = {"X": 0.0, "Y": 0.0, "Z": 0.0, "E": 0.0}
         # if true, args for move (G1) are given relatively (default: absolute)
         self.isRelative = False
         # the segments
@@ -205,13 +216,9 @@ class GcodeModel:
             "Y": self.offset["Y"] + coords["Y"],
             "Z": self.offset["Z"] + coords["Z"],
             "F": coords["F"],  # no feedrate offset
-            "E": self.offset["E"] + coords["E"]
+            "E": self.offset["E"] + coords["E"],
         }
-        seg = Segment(
-            type,
-            absolute,
-            self.parser.lineNb,
-            self.parser.line)
+        seg = Segment(type, absolute, self.parser.lineNb, self.parser.line)
         self.addSegment(seg)
         # update model coords
         self.relative = coords
@@ -236,14 +243,10 @@ class GcodeModel:
             "Z": self.offset["Z"] + coords["Z"],
             "F": coords["F"],  # no feedrate offset
             "E": self.offset["E"] + coords["E"],
-            "EE": coords["E"]
+            "EE": coords["E"],
         }
 
-        seg = Segment(
-            type,
-            absolute,
-            self.parser.lineNb,
-            self.parser.line)
+        seg = Segment(type, absolute, self.parser.lineNb, self.parser.line)
         self.addSegment(seg)
         # update model coords
 
@@ -287,13 +290,7 @@ class GcodeModel:
         # apply intelligence, to classify segments
 
         # start model at 0
-        coords = {
-            "X": 0.0,
-            "Y": 0.0,
-            "Z": 0.0,
-            "F": 0.0,
-            "E": 0.0,
-            "EE": 0.0}
+        coords = {"X": 0.0, "Y": 0.0, "Z": 0.0, "F": 0.0, "E": 0.0, "EE": 0.0}
 
         # first layer at Z=0
         currentLayerIdx = 0
@@ -306,21 +303,20 @@ class GcodeModel:
             # no horizontal movement, but extruder movement: retraction/refill
 
             if (
-                    (seg.coords["X"] == coords["X"]) and
-                    (seg.coords["Y"] == coords["Y"]) and
-                    (seg.coords["E"] != coords["E"])):
+                (seg.coords["X"] == coords["X"])
+                and (seg.coords["Y"] == coords["Y"])
+                and (seg.coords["E"] != coords["E"])
+            ):
                 style = "retract" if (seg.coords["E"] < coords["E"]) else "restore"
 
             # some horizontal movement, and positive extruder movement: extrusion
             if (
-                    ((seg.coords["X"] != coords["X"]) or (seg.coords["Y"] != coords["Y"])) and
-                    (seg.coords["E"] > coords["E"])):
+                (seg.coords["X"] != coords["X"]) or (seg.coords["Y"] != coords["Y"])
+            ) and (seg.coords["E"] > coords["E"]):
                 style = "extrude"
 
             # positive extruder movement in a different Z signals a layer change for this segment
-            if (
-                    (seg.coords["E"] > coords["E"]) and
-                    (seg.coords["Z"] != currentLayerZ)):
+            if (seg.coords["E"] > coords["E"]) and (seg.coords["Z"] != currentLayerZ):
                 currentLayerZ = seg.coords["Z"]
                 currentLayerIdx += 1
 
@@ -341,13 +337,7 @@ class GcodeModel:
         # split segments into previously detected layers
 
         # start model at 0
-        coords = {
-            "X": 0.0,
-            "Y": 0.0,
-            "Z": 0.0,
-            "F": 0.0,
-            "E": 0.0,
-            "EE": 0.0}
+        coords = {"X": 0.0, "Y": 0.0, "Z": 0.0, "F": 0.0, "E": 0.0, "EE": 0.0}
 
         # init layer store
         self.layers = []
@@ -407,7 +397,7 @@ class GcodeModel:
                 d += (seg.coords["Z"] - coords["Z"]) ** 2
                 seg.distance = math.sqrt(d)
                 # calc extrudate
-                seg.extrudate = (seg.coords["E"] - coords["E"])
+                seg.extrudate = seg.coords["E"] - coords["E"]
                 seg.extrude = coords["EE"]
 
                 # accumulate layer metrics
@@ -430,8 +420,17 @@ class GcodeModel:
         self.calcMetrics()
 
     def __str__(self):
-        return "<GcodeModel: len(segments)=%d, len(layers)=%d, distance=%f, extrudate=%f, bbox=%s, extrude=%f>" % (
-            len(self.segments), len(self.layers), self.distance, self.extrudate, self.bbox, self.extrude)
+        return (
+            "<GcodeModel: len(segments)=%d, len(layers)=%d, distance=%f, extrudate=%f, bbox=%s, extrude=%f>"
+            % (
+                len(self.segments),
+                len(self.layers),
+                self.distance,
+                self.extrudate,
+                self.bbox,
+                self.extrude,
+            )
+        )
 
 
 class Segment:
@@ -447,8 +446,18 @@ class Segment:
         self.extrude = None
 
     def __str__(self):
-        return "<Segment: type=%s, lineNb=%d, style=%s, layerIdx=%d, distance=%f, extrudate=%f, extrude=%f>" % (
-            self.type, self.lineNb, self.style, self.layerIdx, self.distance, self.extrudate, self.extrude)
+        return (
+            "<Segment: type=%s, lineNb=%d, style=%s, layerIdx=%d, distance=%f, extrudate=%f, extrude=%f>"
+            % (
+                self.type,
+                self.lineNb,
+                self.style,
+                self.layerIdx,
+                self.distance,
+                self.extrudate,
+                self.extrude,
+            )
+        )
 
 
 class Layer:
@@ -460,10 +469,14 @@ class Layer:
 
     def __str__(self):
         return "<Layer: Z=%f, len(segments)=%d, distance=%f, extrudate=%f>" % (
-            self.Z, len(self.segments), self.distance, self.extrudate)
+            self.Z,
+            len(self.segments),
+            self.distance,
+            self.extrudate,
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     path = "d.gcode"
 
     parser = GcodeParser()
