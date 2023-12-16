@@ -11,9 +11,9 @@ from tvtk.api import tvtk
 
 from gcodeParser import *
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("gcodeParser")
-logger.setLevel(level=logging.INFO)
+logger.setLevel(level=logging.DEBUG)
 logger2 = logging.getLogger("tvtk")
 logger2.setLevel(level=logging.CRITICAL)
 logger3 = logging.getLogger("mayavi")
@@ -45,16 +45,19 @@ class GcodeRenderer:
         black = (0, 0, 0)
         white = (1, 1, 1)
         red = (1, 0, 0)
+        orange = (1, 0.5, 0)
         lightgrey = (0.7529, 0.7529, 0.7529)
         blue = (0, 0.4980, 0.9960)
         mediumgrey = (0.7, 0.7, 0.7)
         darkgrey1 = (0.4509, 0.4509, 0.4509)
         darkgrey2 = (0.5490, 0.5490, 0.5490)
 
+        self.bgcolor = black
         self.supportcolor = lightgrey
         self.extrudecolor = red
         self.bedcolor = mediumgrey
-        self.movecolor = blue
+        self.movecolor = orange
+        
         mlab.options.offscreen = True
 
     def run(self, path: str, support: bool, moves: bool, bed: bool, show: bool, target: str ):
@@ -77,7 +80,6 @@ class GcodeRenderer:
         if show:
             mlab.options.offscreen = False
 
-
         self.createScene()
 
         if bed:
@@ -93,6 +95,7 @@ class GcodeRenderer:
 
         if show:
             self.showScene()
+
         mlab.close(all=True)
 
     def processSegment(self, segment, target):
@@ -108,6 +111,8 @@ class GcodeRenderer:
                 target = "object"
             # case "fly":
             #     target = "moves"
+            case "recall":
+                target = "object"
             case "retract":
                 target = "object"
             case "support":
@@ -154,7 +159,7 @@ class GcodeRenderer:
 
     def createScene(self):
         logger.info("createScene: creating scene")
-        fig1 = mlab.figure(bgcolor=(1, 1, 1), size=(self.imgwidth, self.imgheight))
+        fig1 = mlab.figure(bgcolor=self.bgcolor, size=(self.imgwidth, self.imgheight))
         fig1.scene.parallel_projection = False
         fig1.scene.render_window.point_smoothing = False
         fig1.scene.render_window.line_smoothing = False
@@ -309,7 +314,9 @@ def gcode2png(source, bed, support, moves, show, target):
     """
 
     renderer = GcodeRenderer()
-    renderer.run(source, support, moves, bed, show, click.format_filename(target))
+    if target is not None:
+        target = click.format_filename(target)
+    renderer.run(source, support, moves, bed, show, target)
 
 
 if __name__ == "__main__":
