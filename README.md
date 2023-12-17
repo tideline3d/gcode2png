@@ -1,34 +1,35 @@
 # gcode2png
 
+python3 script for 3D rendering gcode files with [Mayavi](https://docs.enthought.com/mayavi/mayavi/)
 
-python script for 3d rendering gcode files with mayavi
+## Features
 
-all images are created with width of 800px and somewhat ~600px height
+- `--help` is showing usage
+- option to define output image resolution
+- option to show image preview (no more weird unrendered windows)
+- set env var `LOGLEVEL=DEBUG` to see log flood on stderr
 
-## Installation:
-	sudo pip install six==1.12.0 bokeh matplotlib numpy mayavi Pillow wxPython
+## Known limitations
 
-## Usage:
+- python 3.10+
+- tested under Ubuntu 22.04, and nothing else
+- no longer compatible with forked projects
+- some gcode files are rendered weird, see `test_nano.gcode`
 
-# Single file generation
-python ./gcode2png test.gcode moves=[true/false] support=[true/false] show=[true/false] bed=[true/false]
+## Requirements
 
-moves: show movements in red; default=false
+```shell
+pip3 install -r requirements.txt
+```
 
+## Usage
 
-support: show support layers in grey; default=true
+```shell
+python ./gcode2png.py --help
+```
 
+## Thanks
 
-bed: show printbed; default=true
-
-
-show: true = show rendered image; false = save rendered image as png file
-
-
-# batch generation
-
-python ./gcode2png batch /Users/yourname/3dfiles/ moves=[true/false] support=[true/false] show=[true/false] bed=[true/false]
-
-
-## Thanks to:
-gcodeParser.py forked and modifed from: https://github.com/jonathanwin/yagv
+- initial gcode2png idea forked from [Zst](https://github.com/Zst/gcode2png),
+  which was forked from [shodushi](https://github.com/shodushi/gcode2png)
+- [gcodeParser.py](https://github.com/jonathanwin/yagv)
