@@ -13,6 +13,7 @@ repos:
   - id: check-shebang-scripts-are-executable
   - id: check-symlinks
   - id: end-of-file-fixer
+    exclude: ".*.gcode"
   - id: trailing-whitespace
     exclude: ".*.gcode"
   - id: check-json
@@ -43,8 +44,3 @@ repos:
     # pre-commit's default_language_version, see
     # https://pre-commit.com/#top_level-default_language_version
     language_version: python3.10
-
-- repo: https://github.com/jumanjihouse/pre-commit-hooks
-  rev: 3.0.0  # or specific git tag
-  hooks:
-  - id: git-check
