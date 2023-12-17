@@ -1,19 +1,22 @@
 #!/usr/bin/env python
 import click
-import locale
 import logging
-import os
+import math
 import sys
 
-from PIL import Image
 from mayavi import mlab
 from tvtk.api import tvtk
 
 from gcodeParser import *
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger("gcodeParser")
-logger.setLevel(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+# FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
+FORMAT = (
+    "[%(asctime)s %(filename)s->%(funcName)s():%(lineno)s]%(levelname)s: %(message)s"
+)
+logging.basicConfig(format=FORMAT)
+logger.setLevel(logging.INFO)  # notice, DEBUG is SUPER slow
+
 logger2 = logging.getLogger("tvtk")
 logger2.setLevel(level=logging.CRITICAL)
 logger3 = logging.getLogger("mayavi")
@@ -26,9 +29,11 @@ class GcodeRenderer:
         self.imgheight = 1200
 
         self.path = ""
-        self.support = True
+        self.support = False
         self.moves = False
         self.show = False
+
+        self.scene = None
 
         self.coords = {"object": {}, "moves": {}, "support": {}}
         self.coords["object"]["x"] = [0]
@@ -56,11 +61,13 @@ class GcodeRenderer:
         self.supportcolor = lightgrey
         self.extrudecolor = red
         self.bedcolor = mediumgrey
-        self.movecolor = orange
-        
+        self.movecolor = blue
+
         mlab.options.offscreen = True
 
-    def run(self, path: str, support: bool, moves: bool, bed: bool, show: bool, target: str ):
+    def run(
+        self, path: str, support: bool, moves: bool, bed: bool, show: bool, target: str
+    ):
         """Run general processing
 
         Args:
@@ -87,6 +94,7 @@ class GcodeRenderer:
 
         self.loadGcode(self.path)
         self.plotModel()
+        self.plotMoves()
         self.plotSupport()
         self.generateScene()
 
@@ -99,35 +107,83 @@ class GcodeRenderer:
         mlab.close(all=True)
 
     def processSegment(self, segment, target):
-        """Process given gcode segment
+        """Process given gcode segment"""
 
-        Depending on extrusion it changes target such as
-        segment.extrudate == 0.0 then it is a move
+        logger.debug("segment= %s" % str(segment))
 
-        """
-
-        match target:
-            case "extrude":
+        # todo: make it less retarted
+        match segment.type:
+            case "G0:bridge":
                 target = "object"
-            # case "fly":
-            #     target = "moves"
-            case "recall":
+            case "G0:custom":
+                target = "moves"
+            case "G0:external":
                 target = "object"
-            case "retract":
-                target = "object"
-            case "support":
+            case "G0:fill":
                 target = "support"
+            case "G0:internal":
+                target = "support"
+            case "G0:overhang":
+                target = "object"
+            case "G0:perimeter":
+                target = "object"
+            case "G0:skin":
+                target = "object"
+            case "G0:skirt":
+                target = "support"
+            case "G0:solid":
+                target = "object"
+            case "G0:support":
+                target = "support"
+            case "G0:top":
+                target = "object"
+            case "G0:wall":
+                target = "object"
+
+            case "G1:bridge":
+                target = "object"
+            case "G1:custom":
+                target = "moves"
+            case "G1:external":
+                target = "object"
+            case "G1:fill":
+                target = "support"
+            case "G1:infill":
+                target = "support"
+            case "G1:internal":
+                target = "support"
+            case "G1:overhang":
+                target = "object"
+            case "G1:perimeter":
+                target = "object"
+            case "G1:skin":
+                target = "object"
+            case "G1:skirt":
+                target = "support"
+            case "G1:solid":
+                target = "object"
+            case "G1:support":
+                target = "support"
+            case "G1:top":
+                target = "object"
+            case "G1:wall":
+                target = "object"
 
             case default:
                 target = "moves"
 
-                if (segment.extrudate > 0.0) and (segment.extrude > 0.0):
-                    target = "object"
+        if target == "object":
+            if segment.style == "fly":
+                target = "moves"
+            if segment.style == "restore":
+                target = "moves"
+            if segment.style == "retract":
+                target = "moves"
 
         self.coords[target]["x"].append(segment.coords["X"])
         self.coords[target]["y"].append(segment.coords["Y"])
         self.coords[target]["z"].append(segment.coords["Z"])
-        logger.debug("processSegment: %s -> %s added" % (segment.style, target))
+        # logger.debug("%s -> %s added" % (segment.style, target))
 
     def loadGcode(self, path: str):
         """Load gcode to render from given path
@@ -137,28 +193,19 @@ class GcodeRenderer:
 
         """
 
-        logger.info("loadGcode: loading file %s ..." % path)
+        logger.info("loading file %s ..." % path)
         parser = GcodeParser()
         model = parser.parseFile(path)
-        logger.debug("loadGcode: object.layers=%s ..." % len(model["object"].layers))
-        logger.debug("loadGcode: support.layers=%s ..." % len(model["support"].layers))
+        logger.info("model.layers=%s ..." % len(model.layers))
 
-        for layer in model["object"].layers:
+        for layer in model.layers:
             for seg in layer.segments:
-                logger.debug("loadGcode: object:layer:segment = %s" % seg)
                 self.processSegment(seg, seg.style)
 
-        # now everything is a support ... hm
-        if self.support:
-            for layer in model["support"].layers:
-                for seg in layer.segments:
-                    logger.debug("loadGcode: support:layer:segment = %s" % seg)
-                    self.processSegment(seg, seg.style)
-
-        logger.info("loadGcode: done")
+        logger.info("done")
 
     def createScene(self):
-        logger.info("createScene: creating scene")
+        logger.info("creating scene")
         fig1 = mlab.figure(bgcolor=self.bgcolor, size=(self.imgwidth, self.imgheight))
         fig1.scene.parallel_projection = False
         fig1.scene.render_window.point_smoothing = False
@@ -167,10 +214,11 @@ class GcodeRenderer:
         fig1.scene.render_window.multi_samples = 8
         if self.show:
             fig1.scene.show_axes = False
-        logger.info("createScene: done")
+        self.scene = fig1
+        logger.info("done")
 
     def createBed(self):
-        logger.info("createBed: creating bed")
+        logger.info("creating bed")
 
         x1, y1, z1 = (0, 210, 0.1)  # | => pt1
         x2, y2, z2 = (210, 210, 0.1)  # | => pt2
@@ -185,7 +233,7 @@ class GcodeRenderer:
         )
 
         bed_texture = sys.path[0] + "/bed_texture.jpg"
-        logger.info("createBed: loading bed image %s" % bed_texture)
+        logger.info("loading bed image %s" % bed_texture)
 
         img = tvtk.JPEGReader(file_name=bed_texture)
         texture = tvtk.Texture(
@@ -193,12 +241,12 @@ class GcodeRenderer:
         )
         bed.actor.actor.texture = texture
         bed.actor.tcoord_generator_mode = "plane"
-        logger.info("createBed: done")
+
+        logger.info("done")
 
     def plotModel(self):
-        logger.info("plotModel: generating model")
-        logger.debug(
-            "plotModel: object x/y/z = %s/%s/%s"
+        logger.info(
+            "object x/y/z = %s/%s/%s"
             % (
                 len(self.coords["object"]["x"]),
                 len(self.coords["object"]["y"]),
@@ -206,17 +254,22 @@ class GcodeRenderer:
             )
         )
 
+        logger.info("generating model")
         mlab.plot3d(
             self.coords["object"]["x"],
             self.coords["object"]["y"],
             self.coords["object"]["z"],
             color=self.extrudecolor,
-            line_width=2.0,
-            representation="wireframe",
+            # line_width=2.0,
+            # representation="wireframe",
+            tube_radius=0.5,
         )
 
-        logger.debug(
-            "plotModel: moves x/y/z = %s/%s/%s"
+        logger.info("done")
+
+    def plotMoves(self):
+        logger.info(
+            "moves x/y/z = %s/%s/%s"
             % (
                 len(self.coords["moves"]["x"]),
                 len(self.coords["moves"]["y"]),
@@ -224,24 +277,20 @@ class GcodeRenderer:
             )
         )
 
-        if self.moves:
-            logger.debug("plotModel: generating moves")
-
+        if self.moves and (len(self.coords["moves"]["x"]) > 0):
+            logger.info("generating moves")
             mlab.plot3d(
                 self.coords["moves"]["x"],
                 self.coords["moves"]["y"],
                 self.coords["moves"]["z"],
                 color=self.movecolor,
-                line_width=2.0,
-                representation="wireframe",
+                tube_radius=0.5,
             )
-
-        logger.info("plotModel: done")
+        logger.info("done")
 
     def plotSupport(self):
-        logger.info("plotSupport: generating supports")
-        logger.debug(
-            "plotModel: support x/y/z = %s/%s/%s"
+        logger.info(
+            "support x/y/z = %s/%s/%s"
             % (
                 len(self.coords["support"]["x"]),
                 len(self.coords["support"]["y"]),
@@ -249,7 +298,8 @@ class GcodeRenderer:
             )
         )
 
-        if len(self.coords["support"]["x"]) > 0:
+        if self.support and (len(self.coords["support"]["x"]) > 0):
+            logger.info("generating supports")
             mlab.plot3d(
                 self.coords["support"]["x"],
                 self.coords["support"]["y"],
@@ -257,54 +307,57 @@ class GcodeRenderer:
                 color=self.supportcolor,
                 tube_radius=0.5,
             )
-        logger.info("plotSupport: done")
+        logger.info("done")
 
     def generateScene(self):
-        logger.info("generateScene: creating showscene")
+        logger.info("generating scene")
 
-        # mlab.view(azimuth=45, elevation=70, focalpoint=[0, 0, 0], distance=62.0, figure=fig)
-        # tube_radius=0.2, tube_sides=4
-
-        # mlab.roll(-90)
-        # mlab.view(45, 45)
-        mlab.view(225, 45)
-        mlab.view(distance=20)
-        mlab.view(focalpoint=(self.bedsize[0] / 2, self.bedsize[1] / 2, 20))    
-        logger.info("generateScene: done")
+        x_min = min(self.coords["object"]["x"])
+        x_max = max(self.coords["object"]["x"])
+        y_min = min(self.coords["object"]["y"])
+        y_max = max(self.coords["object"]["y"])
+        z_min = min(self.coords["object"]["z"])
+        z_max = max(self.coords["object"]["z"])
+        dimension_x = x_max - x_min
+        dimension_y = y_max - y_min
+        dimension_z = z_max - z_min
+        obj_pos_x = (x_min + x_max) / 2
+        obj_pos_y = (y_min + y_max) / 2
+        obj_pos_z = (z_min + z_max) / 2
+        distance = "auto"
+        distance = 1.5 * math.sqrt(
+            math.pow(dimension_x, 2)
+            + math.pow(dimension_y, 2)
+            + math.pow(dimension_z, 2)
+        )
+        focalpoint = (obj_pos_x, obj_pos_y, obj_pos_z)
+        mlab.view(azimuth=225, elevation=45, distance=distance, focalpoint=focalpoint)
+        logger.info("done")
 
     def showScene(self):
         """show 3D scene in mlab"""
-        logger.info("showScene: creating showscene")
+        logger.info("showing scene")
         mlab.show()
-        logger.info("showScene: done")
+        logger.info("done")
 
     def save(self):
         """Save image"""
-        logger.info("save: preparing to save image")
+        logger.info("preparing to save image")
 
         img_path = self.target
-        logger.info("save: mlab.savefig=%s" % img_path)
+        logger.info("mlab.savefig=%s" % img_path)
         mlab.savefig(img_path)
-        # mlab.close(all=True)
-
-        # downscale to thumbnail
-        # basewidth = 1600
-        # img = Image.open(img_path)
-        # wpercent = basewidth / float(img.size[0])
-        # hsize = int((float(img.size[1]) * float(wpercent)))
-        # img = img.resize((basewidth, hsize), Image.LANCZOS)
-        # img.save(img_path)
-        logger.info("save: img.save=%s" % img_path)
+        logger.info("img.save=%s" % img_path)
 
 
 @click.command()
 @click.option("--bed", default=True, help="Show bed")
-@click.option("--support", default=True, help="Show supports")
+@click.option("--supports", default=False, help="Show supports")
 @click.option("--moves", default=False, help="Show moves")
 @click.option("--show", default=False, help="Show preview window")
 @click.argument("source", type=click.Path(exists=True))
 @click.argument("target", type=click.Path(), required=False)
-def gcode2png(source, bed, support, moves, show, target):
+def gcode2png(source, bed, supports, moves, show, target):
     """Process input filename and based on file name create PNG file
 
     Example input is test.gcode, then output will be test.png
@@ -316,7 +369,9 @@ def gcode2png(source, bed, support, moves, show, target):
     renderer = GcodeRenderer()
     if target is not None:
         target = click.format_filename(target)
-    renderer.run(source, support, moves, bed, show, target)
+    renderer.run(
+        path=source, support=supports, moves=moves, bed=bed, show=show, target=target
+    )
 
 
 if __name__ == "__main__":
