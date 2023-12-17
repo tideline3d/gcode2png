@@ -97,8 +97,9 @@ class GcodeRenderer:
         self.bed = bed
         self.imgwidth = imgx
         self.imgheight = imgy
+        self.show = show
 
-        if show:
+        if self.show:
             mlab.options.offscreen = False
 
         self.createScene()
