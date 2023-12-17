@@ -17,7 +17,10 @@ python3 script for 3D rendering gcode files with [Mayavi](https://docs.enthought
 - python 3.10+
 - tested under Ubuntu 22.04, and nothing else
 - no longer compatible with forked projects
-- some gcode files are rendered weird, see `test_nano.gcode`
+- some gcode files are rendered weird, see `test_nano.gcode`, for example I have
+  some custom gcode to trigger photos for timelapse, and thus some renders
+  contain those lines that go to the back of the plate and then to the right
+  (this is especially visible in skullbowl and crystal examples below)
 - no support for bgcode
 - no support for absolute moves in gcode
 
