@@ -7,6 +7,8 @@ python3 script for 3D rendering gcode files with [Mayavi](https://docs.enthought
 - `--help` is showing usage
 - different options to show bed, model  + moves + supports
 - auto adjust camera based on the model dimensions and location
+- remove first 5 gcode entries from object - helps not to show pruge lines,
+  which would distract the camera view etc
 - option to define output image resolution
 - option to show image preview (no more weird unrendered windows)
 - set env var `LOGLEVEL=DEBUG` to see log flood on stderr
