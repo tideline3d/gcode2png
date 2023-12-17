@@ -14,18 +14,6 @@ python3 script for 3D rendering gcode files with [Mayavi](https://docs.enthought
 - set env var `LOGLEVEL=DEBUG` to see log flood on stderr
 - python 3.10+
 
-## Known limitations
-
-- python 3.10+
-- tested under Ubuntu 22.04, and nothing else
-- no longer compatible with forked projects
-- some gcode files are rendered weird, see `test_nano.gcode`, for example I have
-  some custom gcode to trigger photos for timelapse, and thus some renders
-  contain those lines that go to the back of the plate and then to the right -
-  this is especially visible in `skullbowl`, `crystal` and `test_nano` examples
-- no support for bgcode
-- no support for absolute moves in gcode
-
 ## Examples
 
 Good examples:
@@ -40,6 +28,18 @@ Not so great examples:
 ![tests/crystal.512.png](tests/crystal.512.png)
 ![tests/tension-meter_petg_mini.512.png](tests/tension-meter_petg_mini.512.png)
 ![tests/test_nano.512.png](tests/test_nano.512.png)
+
+## Known limitations
+
+- python 3.10+
+- tested under Ubuntu 22.04, and nothing else
+- no longer compatible with forked projects
+- some gcode files are rendered weird, see `test_nano.gcode`, for example I have
+  some custom gcode to trigger photos for timelapse, and thus some renders
+  contain those lines that go to the back of the plate and then to the right -
+  this is especially visible in `skullbowl`, `crystal` and `test_nano` examples
+- no support for bgcode
+- no support for absolute moves in gcode
 
 ## Requirements
 
