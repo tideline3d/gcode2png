@@ -2,25 +2,15 @@
 
 python3 script for 3D rendering gcode files with [Mayavi](https://docs.enthought.com/mayavi/mayavi/)
 
-Good:
-
-![tests/1.512.png](tests/1.512.png)
-![tests/2.512.png](tests/2.512.png)
-![tests/hana_swimsuit_fv_solid_v1.512.png](tests/hana_swimsuit_fv_solid_v1.512.png)
-![tests/skullbowl_0.4n_0.2mm_PETG_MINI_17h6m.512.png](tests/skullbowl_0.4n_0.2mm_PETG_MINI_17h6m.512.png)
-
-Not so great:
-
-![tests/crystal.512.png](tests/crystal.512.png)
-![tests/tension-meter_petg_mini.512.png](tests/tension-meter_petg_mini.512.png)
-![tests/test_nano.512.png](tests/test_nano.512.png)
-
 ## Features
 
 - `--help` is showing usage
+- different options to show bed, model  + moves + supports
+- auto adjust camera based on the model dimensions and location
 - option to define output image resolution
 - option to show image preview (no more weird unrendered windows)
 - set env var `LOGLEVEL=DEBUG` to see log flood on stderr
+- python 3.10+
 
 ## Known limitations
 
@@ -28,6 +18,23 @@ Not so great:
 - tested under Ubuntu 22.04, and nothing else
 - no longer compatible with forked projects
 - some gcode files are rendered weird, see `test_nano.gcode`
+- no support for bgcode
+- no support for absolute moves in gcode
+
+## Examples
+
+Good examples:
+
+![tests/1.512.png](tests/1.512.png)
+![tests/2.512.png](tests/2.512.png)
+![tests/hana_swimsuit_fv_solid_v1.512.png](tests/hana_swimsuit_fv_solid_v1.512.png)
+![tests/skullbowl_0.4n_0.2mm_PETG_MINI_17h6m.512.png](tests/skullbowl_0.4n_0.2mm_PETG_MINI_17h6m.512.png)
+
+Not so great examples:
+
+![tests/crystal.512.png](tests/crystal.512.png)
+![tests/tension-meter_petg_mini.512.png](tests/tension-meter_petg_mini.512.png)
+![tests/test_nano.512.png](tests/test_nano.512.png)
 
 ## Requirements
 
@@ -57,5 +64,5 @@ make -j12 previews previews_md
 
 ## Todo
 
-- add thumbail generations
+- add thumbnail generations for Linux
 - add install to makefile
