@@ -1,34 +1,61 @@
 # gcode2png
 
+python3 script for 3D rendering gcode files with [Mayavi](https://docs.enthought.com/mayavi/mayavi/)
 
-python script for 3d rendering gcode files with mayavi
+Good:
 
-all images are created with width of 800px and somewhat ~600px height
+![tests/1.512.png](tests/1.512.png)
+![tests/2.512.png](tests/2.512.png)
+![tests/hana_swimsuit_fv_solid_v1.512.png](tests/hana_swimsuit_fv_solid_v1.512.png)
+![tests/skullbowl_0.4n_0.2mm_PETG_MINI_17h6m.512.png](tests/skullbowl_0.4n_0.2mm_PETG_MINI_17h6m.512.png)
 
-## Installation:
-	sudo pip install six==1.12.0 bokeh matplotlib numpy mayavi Pillow wxPython
+Not so great:
 
-## Usage:
+![tests/crystal.512.png](tests/crystal.512.png)
+![tests/tension-meter_petg_mini.512.png](tests/tension-meter_petg_mini.512.png)
+![tests/test_nano.512.png](tests/test_nano.512.png)
 
-# Single file generation
-python ./gcode2png test.gcode moves=[true/false] support=[true/false] show=[true/false] bed=[true/false]
+## Features
 
-moves: show movements in red; default=false
+- `--help` is showing usage
+- option to define output image resolution
+- option to show image preview (no more weird unrendered windows)
+- set env var `LOGLEVEL=DEBUG` to see log flood on stderr
 
+## Known limitations
 
-support: show support layers in grey; default=true
+- python 3.10+
+- tested under Ubuntu 22.04, and nothing else
+- no longer compatible with forked projects
+- some gcode files are rendered weird, see `test_nano.gcode`
 
+## Requirements
 
-bed: show printbed; default=true
+```shell
+pip3 install -r requirements.txt
+```
 
+## Usage
 
-show: true = show rendered image; false = save rendered image as png file
+```shell
+python ./gcode2png.py --help
+```
 
+## Develop
 
-# batch generation
+```shell
+make clean
+make -j12 all
+make -j12 previews previews_md
+```
 
-python ./gcode2png batch /Users/yourname/3dfiles/ moves=[true/false] support=[true/false] show=[true/false] bed=[true/false]
+## Thanks
 
+- initial gcode2png idea forked from [Zst](https://github.com/Zst/gcode2png),
+  which was forked from [shodushi](https://github.com/shodushi/gcode2png)
+- [gcodeParser.py](https://github.com/jonathanwin/yagv)
 
-## Thanks to:
-gcodeParser.py forked and modifed from: https://github.com/jonathanwin/yagv
+## Todo
+
+- add thumbail generations
+- add install to makefile
