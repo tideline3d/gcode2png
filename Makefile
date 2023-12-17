@@ -1,6 +1,6 @@
 .PHONY: clean all test segments gcode2png gcode2png_all gcode2png_moves gcode2png_supports
 
-all: test segments
+all: test segments previews
 test: test_tension test_1 test_2 test_hana test_skull
 
 clean:
@@ -49,3 +49,15 @@ test_crystal:
 
 segments: test_1 test_2 test_crystal test_hana test_skull test_tension test_nano
 	grep "segment" tests/*.stderr.log|awk '{print $$6}'|sort|uniq
+
+previews:
+	$(MAKE) FILENAME=1 gcode2png512
+	$(MAKE) FILENAME=2 gcode2png512
+	$(MAKE) FILENAME=hana_swimsuit_fv_solid_v1 gcode2png512
+	$(MAKE) FILENAME=test_nano gcode2png512
+	$(MAKE) FILENAME=skullbowl_0.4n_0.2mm_PETG_MINI_17h6m gcode2png512
+	$(MAKE) FILENAME=tension-meter_petg_mini gcode2png512
+	$(MAKE) FILENAME=crystal gcode2png512
+
+previews_md:
+	@ls -1 tests/*.512.png | xargs -I{} echo "![$$(basename {})]({})"
